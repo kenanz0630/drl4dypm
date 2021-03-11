@@ -538,8 +538,7 @@ class Actor(nn.Module):
 								 params_lstm['num_layers'],
 								 batch_first=True,
 								 bidirectional=True)
-			# self.lstm_out_dim = params_lstm['hidden_dim']*2*k
-			self.lstm_out_dim = params_lstm['hidden_dim']*2
+			self.lstm_out_dim = params_lstm['hidden_dim']*2*k
 			input_dim = self.lstm_out_dim
 		else:
 			# without LSTM layer
@@ -582,8 +581,7 @@ class Actor(nn.Module):
 
 	def forward(self, state, last_action=None, ipm=None):
 		if self.lstm is not None:
-			# state = torch.relu(self.lstm(state)[0].reshape(-1,self.lstm_out_dim)) # LSTM output, all steps
-			state = torch.relu(self.lstm(state)[0][:,-1]) # LSTM output, last step
+			state = torch.relu(self.lstm(state)[0].reshape(-1,self.lstm_out_dim)) # LSTM output, all steps
 
 		if last_action is not None:
 			state = torch.cat([state, last_action], dim=1)
@@ -628,8 +626,7 @@ class Critic(nn.Module):
 								 params_lstm['num_layers'],
 								 batch_first=True,
 								 bidirectional=True)
-			# self.lstm_out_dim = params_lstm['hidden_dim']*2*k
-			self.lstm_out_dim = params_lstm['hidden_dim']*2
+			self.lstm_out_dim = params_lstm['hidden_dim']*2*k
 			input_dim = self.lstm_out_dim
 		else:
 			# without LSTM
@@ -666,8 +663,7 @@ class Critic(nn.Module):
 
 	def forward(self, state, action, last_action=None, ipm=None):
 		if self.lstm is not None:
-			# state = torch.relu(self.lstm(state)[0].reshape(-1, self.lstm_out_dim)) # LSTM output, all step
-			state = torch.relu(self.lstm(state)[0][:,-1]) # LSTM output, last step
+			state = torch.relu(self.lstm(state)[0].reshape(-1, self.lstm_out_dim)) # LSTM output, all step
 
 		if last_action is not None:
 			state = torch.cat([state, last_action], dim=1)
