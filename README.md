@@ -6,6 +6,8 @@
 This repository is an implementation of the reinforcement learning model for dynamic portfolio management proposed in [Yu et al. (2019) Model-based Deep Reinforcement Learning for Dynamic Portfolio
 Optimization](https://arxiv.org/abs/1901.08740). 
 
+A presentation of this project is [here](https://youtu.be/6R_BrMVoSB0).
+
 
 ## Motivation
 
@@ -79,34 +81,17 @@ In the learning process, after we observe the next state *s*<sub>t+1</sub>, BCM 
 When updating the actor, we compute an additional loss that measures the difference between the agent’s actions and the expert's actions, and use its gradient to update actor with a samll factor, along with the policy gradient derived by DDPG. 
 
 
-
-## Experiments
-The data used in this experiment are stock prices from the end of 2015 to early 2021. 
-I selected six stocks to construct the portfolio, acrossing different industries:
-* American Airline (AAL)
-* CVS (CVS)
-* FedEx (FDX)
-* Ford (F)
-* American International Group (AIG)
-* Caterpillar (CAT)
-The last three are also considered in the paper.
-
-Since there are no open-sourced codes, I implemented the model based on the paper. The codes can be found [here](https://github.com/kenanz0630/drl4dypm/tree/master/src/drl4dypm).
-
-### Data processing
-
-The raw data are minute-level stock price. Through data preprocessing, they are aggregated to daily closing, low and high prices and mapped to the same time horizon. The codes can be find in the notebook [data_processing](https://github.com/kenanz0630/drl4dypm/blob/master/src/data_processing.ipynb). 
-
-###### Stock price over time
-<img src="/src/figs/stock_price.png" width="800">
-
+## Implementation
+Since there are no open-sourced codes, I implemented the model based on the paper. 
 
 ### Trading environment
 The environment is built similar to the example given in Chp. 22 of book [Machine Learning for Algorithmic Trading](https://github.com/PacktPublishing/Machine-Learning-for-Algorithmic-Trading-Second-Edition). It has two main classes: 
 * `DataSource`: load and processe the data, and provide state variables at each step 
 * `TradingSimulator`: execute action and compute immediate reward 
 
-`DataSource` and `TradingSimulator` are wrapped in `TradingEnvironment` to interact with the trading agent. The `take_step()` function takes action and current state as inputs, and return reward, next state and indicator of whether the trading period has ended. 
+`DataSource` and `TradingSimulator` are wrapped in `TradingEnvironment` to interact with the trading agent. The `take_step()` function takes action and current state as inputs, and return reward, next state and indicator of whether the trading period has ended. Each `state` is a tuple of three emelments: stock price, price matrix as input of actor/critic, and price percentage change as input of IPM. `TradingEnvironment` supports multiple agents. Hence, `actions` (`rewards`)	is a dictionary with agents' names as keys and agents' actions (rewards) as values.
+
+
 
     def take_step(self, actions, state):
         rewards = self.simulator.take_step(actions, state)
@@ -114,13 +99,9 @@ The environment is built similar to the example given in Chp. 22 of book [Machin
         
         return rewards, next_state, end
 
-Each `state` is a tuple of three emelments: stock price, price matrix as input of actor/critic, and price percentage change as input of IPM. 
   
 
-`TradingEnvironment` supports multiple agents. Hence, `actions`	is a dictionary with agents' names as keys and agents' actions as values.
-
-
-
+`DataSource`, `TradingSimulator` and `TradingEnvironment` are defined in [env.py](https://github.com/kenanz0630/drl4dypm/blob/master/src/drl4dypm/env.py).
 
 
 ### Trading agent
@@ -134,6 +115,78 @@ Four agents are implemented in current codes:
 For benchmark, another agent is developed that follows constantly rebalanced portfolio (CPR) strategy. 
 It simply keeps equal weights for all asset over the trading period.  
 
+
+All RL agents are instances of `RLAgent`. It is developed based on `DDPGPer` class in [machin](https://github.com/iffiX/machin/tree/af1b5d825e27a98deab7130eedbe1c2505dacf9d), a reinforcement library designed for pytorch. 
+
+Main methods of `RLAgent` are:
+* `get_action()`: call actor to generate a noisy or noise-free action
+* `store_transition()`: store a transition to the replay buffer
+* `update()`: update actor, critic and target networks
+
+These methods take different inputs and perform different algorithms, according to the agent type. For instance, when IPM is implemented, `get_action()` takes both `state` and `ipm_predict` as inputs; when BCM is implemented, a self-defined update function is called 
+where the additional expert auxiliary loss is considered.
+
+
+The benchmark `CPRAgent` only has one method `get_action()` that returns the same weight vetor. 
+
+Both `RLAgent` and `CPRAgent` are defined in [agent.py](https://github.com/kenanz0630/drl4dypm/blob/master/src/drl4dypm/agent.py).
+
+
+
+
+
+
+## Experiments
+The data used in this experiment are stock prices from the end of 2015 to early 2021. 
+I selected six stocks to construct the portfolio, acrossing different industries:
+* American Airline (AAL)
+* CVS (CVS)
+* FedEx (FDX)
+* Ford (F)
+* American International Group (AIG)
+* Caterpillar (CAT)
+The last three are also considered in the paper.
+
+
+### Data processing
+
+The raw data are minute-level stock price. Through data preprocessing, they are aggregated to daily closing, low and high prices and mapped to the same time horizon. The codes can be found in the notebook [data_processing](https://github.com/kenanz0630/drl4dypm/blob/master/src/data_processing.ipynb). 
+
+###### Stock price over time
+<img src="/src/figs/stock_price.png" width="800">
+
+
+### Learning
+An example model training and testing can be found in the notebook [main](https://github.com/kenanz0630/drl4dypm/blob/master/src/main.ipynb). In what follows, we will go through the main process step by step.
+
+#### Set up parameters
+We first set up parameters for the environment, agents, and the training process.
+
+    # environment params
+    trading_days = 252                                  # length of each trading period
+    asset_names = ['AAL','CVS','FDX','F','AIG','CAT']   # names of selected stocks
+    k = 10                                              # length of price history
+    cost_bps = 1e-3                                     # rate of contraction cost
+    path_to_data = 'data/stock_price_1D.csv'            # path to data
+
+    # agent params
+    num_assets = len(asset_names)                       # number of assets
+    state_dim = 3*(1+num_assets)                        # dimension of price matrices 
+    action_dim = 1+num_assets                           # dimension of action
+
+    critic_learning_rate = 1e-3                         # learning rate of critic
+    actor_learning_rate = critic_learning_rate * 0.5    # learning rate of actor
+
+
+    # training params
+    max_episode = 200                                   # number of training episodes
+    min_episode_to_update = 10                          # minimum episode to start updating networks 
+                                                        # (before that, there might not be enough samples) 
+
+
+
+#### Create agents and environment
+#### Training
 
 
 
