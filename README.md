@@ -15,6 +15,7 @@ It natually falls into the famework of reinforcement learning, an agent learn an
 Hence, we may consider the portfolio reallocation as "action", the stock market as "environment", and the immediate investment return as "reward". 
 
 
+
 ## Problem statement
 Consider a portfolio of *m* assets and cash. We use vector **w** to denote the weight of each asset, and accordingly, the sum of weights equals 1.
 Suppose the weight after the last reallocation is **w**<sub>t-1</sub>, at the end of the current time step, the weight shifts to **w**'<sub>t</sub> 
@@ -32,10 +33,18 @@ where *&rho;<sub>t</sub>* is the portfolio value at the end of time step *t*. Th
 the transaction cost of reallocation. 
 
 
+
 ### DDPG algorithm
 The learning algorithm used in this project is [DDPG](https://arxiv.org/abs/1509.02971), a deterministic policy gradient method.
 It applies the idea of actor-critic method---learn a critic by minimizing the Bellman-error and an actor by maximizing the estimated value function. 
 To stablize the learning, the targets in critic learning are computed using two seperate networks (called target critic and actor networks). 
 Parameters of these two networks are updated as exponential average of those of the critic and actor. 
+
+
+## Model framework
+DDPG is a model-free learning algorithm. To further improve the performance, the authors proposed three modules to support the learning. In this project, I implemented two of them: infused prediction module (IPM) and behavioral cloning module (BCM). 
+
+### Network structures of actor and critic
+
 
 
