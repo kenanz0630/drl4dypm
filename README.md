@@ -222,14 +222,14 @@ The last three are also considered in the paper.
 
 ### Data processing
 
-The raw data are minute-level stock price. Through data preprocessing, they are aggregated to daily closing, low and high prices and mapped to the same time horizon. The codes can be found in the notebook [data_processing](https://github.com/kenanz0630/drl4dypm/blob/master/src/data_processing.ipynb). 
+The raw data are minute-level stock price. Through data preprocessing, they are aggregated to daily closing, low and high prices and mapped to the same time horizon. The codes can be found in the notebook [data_processing.ipynb](https://github.com/kenanz0630/drl4dypm/blob/master/src/data_processing.ipynb). 
 
 ###### Stock price over time
 <img src="/src/figs/stock_price.png" width="600">
 
 
 ### Learning
-An example model training and testing can be found in the notebook [main](https://github.com/kenanz0630/drl4dypm/blob/master/src/main.ipynb). 
+An example model training and testing can be found in the notebook [main.ipynb](https://github.com/kenanz0630/drl4dypm/blob/master/src/main.ipynb). 
 
 In the example, we define one environment and five agents. Each time follows five steps:
 1. Each agent generates action using current state
@@ -242,10 +242,10 @@ In the example, we define one environment and five agents. Each time follows fiv
 
 ### Evaluation
 Following the paper, I used four metrics to evaluate the performance:
-1. Annual return: mean of portfolio return *&mu*
-2. Annual volatility: standard deviation of portfolio return *&sigma*
-3. Sharpe ratio: return per unit risk *&mu/&sigma*
-4. Sortino ratio: return per unit harmful volatility *&mu/&sigma<sub>d</sub>*
+1. Annual return: mean of portfolio return *&mu;*
+2. Annual volatility: standard deviation of portfolio return *&sigma;*
+3. Sharpe ratio: return per unit risk *&mu;/&sigma;*
+4. Sortino ratio: return per unit harmful volatility *&mu;/&sigma;<sub>d</sub>*
 
 
 
